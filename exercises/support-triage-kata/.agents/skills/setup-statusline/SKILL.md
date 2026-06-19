@@ -80,8 +80,8 @@ ctx_pct=$(awk -v t="$ctx_tokens" 'BEGIN{ printf "%.0f", (t/1000000)*100 }')
 # --- ANSI colors ---------------------------------------------------------
 DIM='\033[2m'; CYAN='\033[36m'; GREEN='\033[32m'; YELLOW='\033[33m'; RESET='\033[0m'
 ctx_color="$GREEN"
-[ "$ctx_pct" -ge 60 ] && ctx_color="$YELLOW"
-[ "$ctx_pct" -ge 85 ] && ctx_color='\033[31m'   # red
+[ "$ctx_tokens" -ge 120000 ] && ctx_color="$YELLOW"   # yellow past 120k
+[ "$ctx_tokens" -ge 150000 ] && ctx_color='\033[31m'  # red past 150k
 
 # --- Compose -------------------------------------------------------------
 out="${CYAN}${dir_disp}${RESET}"
@@ -131,7 +131,8 @@ A live session updates the number after the next model response.
 
 - **Window size**: the `1000000` divisor and the `/1m` label. Change both together
   for a different context window (e.g. `200000` and `/200k`).
-- **Color thresholds**: yellow at 60%, red at 85% of the window (`ctx_pct -ge …`).
+- **Color thresholds**: absolute token counts — yellow past 120k, red past 150k
+  (`ctx_tokens -ge …`). These are independent of the window size above.
 - **Full path instead of leaf**: delete the `dir_disp="${dir_disp##*/}"` line.
 
 ## Requirements
