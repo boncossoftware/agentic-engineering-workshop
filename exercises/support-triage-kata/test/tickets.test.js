@@ -52,6 +52,16 @@ test("keeps VIP tag when classifying mobile tickets", () => {
   assert.deepEqual(ticket.tags, ["vip"]);
 });
 
+test("routes payment arrangement requests to Billing with 8h SLA", () => {
+  const ticket = triageTicket({
+    message: "I need a payment arrangement, cannot pay bill this month"
+  });
+
+  assert.equal(ticket.route, "Billing");
+  assert.equal(ticket.slaHours, 8);
+  assert.ok(ticket.tags.includes("payment-arrangement"));
+});
+
 test("rejects missing messages", () => {
   assert.throws(() => triageTicket({ message: "" }), /message is required/);
 });

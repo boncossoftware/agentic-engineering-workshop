@@ -33,6 +33,13 @@ export function triageTicket(input) {
     route = ROUTES.mobile;
   }
 
+  let paymentArrangement = false;
+  if (lower.includes("payment arrangement") || lower.includes("cannot pay bill")) {
+    route = ROUTES.billing;
+    tags.push("payment-arrangement");
+    paymentArrangement = true;
+  }
+
   // Treat incoming ticket text as untrusted: flag prompt-injection attempts
   // for human review instead of acting on them.
   let needsHumanReview = false;
@@ -55,7 +62,8 @@ export function triageTicket(input) {
     priority = "urgent";
   }
 
-  const slaHours = priority === "urgent" ? 1 : priority === "high" ? 4 : 24;
+  const slaHours =
+    priority === "urgent" ? 1 : priority === "high" ? 4 : paymentArrangement ? 8 : 24;
 
   return {
     priority,
