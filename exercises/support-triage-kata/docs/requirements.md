@@ -95,6 +95,27 @@ If the message contains phrases such as "ignore previous instructions", "system 
 - set `needsHumanReview` to true
 - keep classifying the ticket normally where possible
 
+### Recurring problem
+
+When a message indicates the customer is reporting the same problem again, it
+likely needs a human to spot a pattern that automation would miss.
+
+If the message contains any of the following case-insensitive indicators:
+
+- English: `again`, `still down`, `same problem`
+- Papiamento: `atrobe`, `ta pasa atrobe`
+
+then:
+
+- add the `recurring` tag
+- set `needsHumanReview` to true
+
+This rule only adds the tag and flags review; it does not change priority,
+route, or SLA. The ticket is still classified normally (e.g. "Internet down
+again" stays a high-priority `Network Operations` outage). Like the
+prompt-injection rule, this composes on top of any other flag that already set
+`needsHumanReview`.
+
 ## Extension exercise
 
 Add a vertical slice for payment-arrangement tickets:

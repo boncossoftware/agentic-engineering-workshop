@@ -124,6 +124,25 @@ test("detects Dutch outage phrasing as a high-priority network ticket", () => {
   assert.equal(ticket.slaHours, 4);
 });
 
+test("flags recurring outage reports for human review while routing normally", () => {
+  const ticket = triageTicket({
+    message: "Internet down again, third time this week"
+  });
+
+  assert.equal(ticket.route, "Network Operations");
+  assert.equal(ticket.priority, "high");
+  assert.ok(ticket.tags.includes("recurring"));
+  assert.equal(ticket.needsHumanReview, true);
+});
+
+test("does not tag a first-time outage report as recurring", () => {
+  const ticket = triageTicket({
+    message: "Customer reports NO INTERNET after modem reboot"
+  });
+
+  assert.ok(!ticket.tags.includes("recurring"));
+});
+
 test("rejects missing messages", () => {
   assert.throws(() => triageTicket({ message: "" }), /message is required/);
 });

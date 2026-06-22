@@ -24,6 +24,22 @@ function isOutage(lower) {
   return OUTAGE_INDICATORS.some((indicator) => lower.includes(indicator));
 }
 
+// Phrases that signal the customer is reporting the SAME problem again.
+// Small, defensible list of case-insensitive substrings; English plus
+// Papiamento equivalents. Matching only ADDS the `recurring` tag and forces
+// human review, never changing priority/route/SLA.
+const RECURRING_INDICATORS = [
+  "again",
+  "still down",
+  "same problem",
+  "atrobe",
+  "ta pasa atrobe"
+];
+
+function isRecurring(lower) {
+  return RECURRING_INDICATORS.some((indicator) => lower.includes(indicator));
+}
+
 export function triageTicket(input) {
   if (!input || typeof input.message !== "string" || input.message.trim() === "") {
     throw new Error("message is required");
@@ -86,6 +102,13 @@ export function triageTicket(input) {
   if (lower.includes("ignore previous instructions") || lower.includes("reveal secrets")) {
     needsHumanReview = true;
     tags.push("security-review");
+  }
+
+  // Repeat reports of the same problem need a human; the classification
+  // (priority/route/SLA) is left untouched.
+  if (isRecurring(lower)) {
+    tags.push("recurring");
+    needsHumanReview = true;
   }
 
   if (lower.includes("down") || isOutage(lower)) {
