@@ -17,8 +17,11 @@ export function triageTicket(input) {
   let route = ROUTES.general;
   const tags = [];
 
+  let vip = false;
   if (lower.includes("vip")) {
     tags.push("vip");
+    tags.push("vip-escalation");
+    vip = true;
   }
 
   if (lower.includes("internet") || lower.includes("fiber") || lower.includes("modem")) {
@@ -73,8 +76,14 @@ export function triageTicket(input) {
     priority = "urgent";
   }
 
-  const slaHours =
+  let slaHours =
     priority === "urgent" ? 1 : priority === "high" ? 4 : paymentArrangement ? 8 : 24;
+
+  // VIP escalation composes on top of every other rule: halve the final SLA
+  // (rounded down, floored at 1 hour) only after it is fully determined.
+  if (vip) {
+    slaHours = Math.max(1, Math.floor(slaHours / 2));
+  }
 
   return {
     priority,

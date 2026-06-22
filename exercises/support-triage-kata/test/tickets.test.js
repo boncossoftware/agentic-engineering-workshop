@@ -49,7 +49,7 @@ test("keeps VIP tag when classifying mobile tickets", () => {
   });
 
   assert.equal(ticket.route, "Mobile Support");
-  assert.deepEqual(ticket.tags, ["vip"]);
+  assert.deepEqual(ticket.tags, ["vip", "vip-escalation"]);
 });
 
 test("routes payment arrangement requests to Billing with 8h SLA", () => {
@@ -80,6 +80,28 @@ test("keeps plain mobile tickets at normal priority without travel context", () 
   assert.equal(ticket.route, "Mobile Support");
   assert.equal(ticket.priority, "normal");
   assert.equal(ticket.slaHours, 24);
+});
+
+test("halves the SLA for VIP normal tickets and adds vip-escalation tag", () => {
+  const ticket = triageTicket({
+    message: "VIP customer has a general question"
+  });
+
+  assert.equal(ticket.slaHours, 12);
+  assert.ok(ticket.tags.includes("vip"));
+  assert.ok(ticket.tags.includes("vip-escalation"));
+});
+
+test("composes VIP escalation with high-priority network tickets", () => {
+  const ticket = triageTicket({
+    message: "VIP customer, no internet, modem down"
+  });
+
+  assert.equal(ticket.route, "Network Operations");
+  assert.equal(ticket.priority, "high");
+  assert.equal(ticket.slaHours, 2);
+  assert.ok(ticket.tags.includes("vip"));
+  assert.ok(ticket.tags.includes("vip-escalation"));
 });
 
 test("rejects missing messages", () => {
