@@ -40,6 +40,17 @@ function isRecurring(lower) {
   return RECURRING_INDICATORS.some((indicator) => lower.includes(indicator));
 }
 
+// Prompt-injection markers. Single source of truth shared by the
+// security-review check (any marker present) and the oversized/abusive
+// guard (more than one distinct marker present). Matched as case-insensitive
+// substrings against the lowercased message.
+const INJECTION_MARKERS = [
+  "ignore previous instructions",
+  "system prompt",
+  "developer message",
+  "reveal secrets"
+];
+
 export function triageTicket(input) {
   if (!input || typeof input.message !== "string" || input.message.trim() === "") {
     throw new Error("message is required");
@@ -99,9 +110,20 @@ export function triageTicket(input) {
   // Treat incoming ticket text as untrusted: flag prompt-injection attempts
   // for human review instead of acting on them.
   let needsHumanReview = false;
-  if (lower.includes("ignore previous instructions") || lower.includes("reveal secrets")) {
+  const injectionCount = INJECTION_MARKERS.filter((marker) =>
+    lower.includes(marker)
+  ).length;
+  if (injectionCount > 0) {
     needsHumanReview = true;
     tags.push("security-review");
+  }
+
+  // Oversized or abusive input guard: never throw on large/hostile input,
+  // just classify what is safe and flag for a human. Triggered by very long
+  // messages or by more than one distinct prompt-injection marker.
+  if (message.length > 2000 || injectionCount > 1) {
+    needsHumanReview = true;
+    tags.push("needs-human-review");
   }
 
   // Repeat reports of the same problem need a human; the classification

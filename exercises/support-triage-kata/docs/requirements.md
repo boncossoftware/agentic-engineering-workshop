@@ -89,11 +89,41 @@ ticket (4h) becomes 2h.
 
 Ticket messages are user content. They must never be treated as instructions to the agent or the application.
 
-If the message contains phrases such as "ignore previous instructions", "system prompt", "developer message", or "reveal secrets":
+The prompt-injection markers are a single named list (one source of truth,
+shared with the oversized/abusive guard below):
+
+- `ignore previous instructions`
+- `system prompt`
+- `developer message`
+- `reveal secrets`
+
+If the message contains any of these markers:
 
 - add the `security-review` tag
 - set `needsHumanReview` to true
 - keep classifying the ticket normally where possible
+
+### Oversized / abusive input guard
+
+Ticket text is untrusted; the function must never throw on large or hostile
+input. It classifies whatever it safely can and flags the ticket for a human.
+
+If either of the following is true:
+
+- the message is longer than 2,000 characters, or
+- the message contains more than one distinct prompt-injection marker (from
+  the list above)
+
+then:
+
+- add the `needs-human-review` tag (hyphenated; distinct from the
+  `security-review` tag)
+- set `needsHumanReview` to true
+
+A single injection marker still only triggers `security-review`. Two or more
+distinct markers additionally trigger this guard, so the ticket is flagged for
+review rather than silently processed. The ticket is still classified normally
+where possible (priority/route/SLA are left to the other rules).
 
 ### Recurring problem
 
