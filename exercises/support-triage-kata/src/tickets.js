@@ -29,8 +29,19 @@ export function triageTicket(input) {
     route = ROUTES.billing;
   }
 
-  if (lower.includes("sim") || lower.includes("mobile")) {
+  if (lower.includes("sim") || lower.includes("mobile") || lower.includes("roaming")) {
     route = ROUTES.mobile;
+  }
+
+  // Roaming failures while the customer is travelling are time-critical.
+  if (
+    lower.includes("roaming") &&
+    (lower.includes("abroad") ||
+      lower.includes("overseas") ||
+      lower.includes("traveling") ||
+      lower.includes("travelling"))
+  ) {
+    priority = "high";
   }
 
   let paymentArrangement = false;

@@ -62,6 +62,26 @@ test("routes payment arrangement requests to Billing with 8h SLA", () => {
   assert.ok(ticket.tags.includes("payment-arrangement"));
 });
 
+test("escalates roaming-while-travelling tickets to high priority with 4h SLA", () => {
+  const ticket = triageTicket({
+    message: "Roaming not working, I am abroad and have no signal"
+  });
+
+  assert.equal(ticket.route, "Mobile Support");
+  assert.equal(ticket.priority, "high");
+  assert.equal(ticket.slaHours, 4);
+});
+
+test("keeps plain mobile tickets at normal priority without travel context", () => {
+  const ticket = triageTicket({
+    message: "My mobile roaming feature is enabled but I have a billing question"
+  });
+
+  assert.equal(ticket.route, "Mobile Support");
+  assert.equal(ticket.priority, "normal");
+  assert.equal(ticket.slaHours, 24);
+});
+
 test("rejects missing messages", () => {
   assert.throws(() => triageTicket({ message: "" }), /message is required/);
 });

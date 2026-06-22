@@ -59,6 +59,8 @@ Route to `Mobile Support` when the message mentions:
 - mobile
 - roaming
 
+If the message mentions `roaming` together with a travel context (`abroad`, `overseas`, `traveling`, or `travelling`), the customer is likely stranded without service. Set priority to `high` and SLA to 4 hours. Routing stays `Mobile Support`. A plain mobile or roaming ticket without travel context stays priority `normal`.
+
 ### VIP
 
 If the message mentions VIP, add the `vip` tag.
