@@ -33,9 +33,26 @@ export function triageTicket(input) {
     route = ROUTES.mobile;
   }
 
-  // Intentional workshop bug: this check is case-sensitive and incomplete.
-  if (message.includes("outage") || message.includes("down") || message.includes("no internet")) {
+  // Treat incoming ticket text as untrusted: flag prompt-injection attempts
+  // for human review instead of acting on them.
+  let needsHumanReview = false;
+  if (lower.includes("ignore previous instructions") || lower.includes("reveal secrets")) {
+    needsHumanReview = true;
+    tags.push("security-review");
+  }
+
+  if (lower.includes("down") || lower.includes("no internet")) {
     priority = "high";
+  }
+
+  // Widespread/area-wide network issues take precedence over single-customer ones.
+  if (
+    lower.includes("outage") ||
+    lower.includes("neighborhood") ||
+    lower.includes("area") ||
+    lower.includes("multiple")
+  ) {
+    priority = "urgent";
   }
 
   const slaHours = priority === "urgent" ? 1 : priority === "high" ? 4 : 24;
@@ -45,7 +62,7 @@ export function triageTicket(input) {
     route,
     slaHours,
     tags,
-    needsHumanReview: false
+    needsHumanReview
   };
 }
 
