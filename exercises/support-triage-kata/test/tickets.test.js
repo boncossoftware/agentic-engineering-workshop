@@ -104,6 +104,26 @@ test("composes VIP escalation with high-priority network tickets", () => {
   assert.ok(ticket.tags.includes("vip-escalation"));
 });
 
+test("detects Papiamento outage phrasing as a high-priority network ticket", () => {
+  const ticket = triageTicket({
+    message: "No tin internet for di awe mainta"
+  });
+
+  assert.equal(ticket.route, "Network Operations");
+  assert.equal(ticket.priority, "high");
+  assert.equal(ticket.slaHours, 4);
+});
+
+test("detects Dutch outage phrasing as a high-priority network ticket", () => {
+  const ticket = triageTicket({
+    message: "Geen internet sinds vanochtend"
+  });
+
+  assert.equal(ticket.route, "Network Operations");
+  assert.equal(ticket.priority, "high");
+  assert.equal(ticket.slaHours, 4);
+});
+
 test("rejects missing messages", () => {
   assert.throws(() => triageTicket({ message: "" }), /message is required/);
 });

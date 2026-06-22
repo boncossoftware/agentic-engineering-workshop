@@ -5,6 +5,25 @@ const ROUTES = {
   mobile: "Mobile Support"
 };
 
+// Single-customer outage indicators across the languages we support.
+// English plus Papiamento and Dutch equivalents; add a language by
+// dropping its phrase in here. Matched as case-insensitive substrings.
+const OUTAGE_INDICATORS = [
+  "outage",
+  "no internet",
+  "no tin internet",
+  "internet a cai",
+  "sin internet",
+  "geen internet",
+  "internet is weg",
+  "interupcion",
+  "storing"
+];
+
+function isOutage(lower) {
+  return OUTAGE_INDICATORS.some((indicator) => lower.includes(indicator));
+}
+
 export function triageTicket(input) {
   if (!input || typeof input.message !== "string" || input.message.trim() === "") {
     throw new Error("message is required");
@@ -25,6 +44,13 @@ export function triageTicket(input) {
   }
 
   if (lower.includes("internet") || lower.includes("fiber") || lower.includes("modem")) {
+    route = ROUTES.network;
+  }
+
+  // Outage indicators (incl. Papiamento/Dutch phrasings and the telecom
+  // terms interupcion/storing) may not mention "internet", so route them
+  // to Network Operations explicitly.
+  if (isOutage(lower)) {
     route = ROUTES.network;
   }
 
@@ -62,7 +88,7 @@ export function triageTicket(input) {
     tags.push("security-review");
   }
 
-  if (lower.includes("down") || lower.includes("no internet")) {
+  if (lower.includes("down") || isOutage(lower)) {
     priority = "high";
   }
 

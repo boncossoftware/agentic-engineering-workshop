@@ -32,6 +32,15 @@ Route to `Network Operations` when the message mentions:
 
 If a single customer reports "no internet", "down", or "outage", priority is `high` and SLA is 4 hours.
 
+Outage indicators are multilingual. The following are all treated as
+outage-equivalent (case-insensitive) and route to `Network Operations` with
+priority `high` and SLA 4 hours, even when they do not contain the word
+"internet":
+
+- Papiamento: `no tin internet`, `internet a cai`, `sin internet`
+- Dutch: `geen internet`, `internet is weg`
+- Telecom terms: `interupcion`, `storing`
+
 If the message suggests an area issue or multiple customers, priority is `urgent` and SLA is 1 hour.
 
 Area indicators:
