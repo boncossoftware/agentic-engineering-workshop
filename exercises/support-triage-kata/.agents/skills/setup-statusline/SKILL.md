@@ -78,10 +78,13 @@ ctx_fmt=$(awk -v t="$ctx_tokens" 'BEGIN{ if (t>=1000) printf "%.1fk", t/1000; el
 ctx_pct=$(awk -v t="$ctx_tokens" 'BEGIN{ printf "%.0f", (t/1000000)*100 }')
 
 # --- ANSI colors ---------------------------------------------------------
-DIM='\033[2m'; CYAN='\033[36m'; GREEN='\033[32m'; YELLOW='\033[33m'; RESET='\033[0m'
+# Use ANSI-C quoting ($'…') so these hold real ESC bytes. That lets us print
+# the final string with `printf '%s'` (no `%b`), which avoids interpreting
+# backslash escapes inside attacker-controlled fields like the cwd leaf.
+DIM=$'\033[2m'; CYAN=$'\033[36m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; RESET=$'\033[0m'
 ctx_color="$GREEN"
-[ "$ctx_tokens" -ge 120000 ] && ctx_color="$YELLOW"   # yellow past 120k
-[ "$ctx_tokens" -ge 150000 ] && ctx_color='\033[31m'  # red past 150k
+[ "$ctx_tokens" -ge 120000 ] && ctx_color="$YELLOW"     # yellow past 120k
+[ "$ctx_tokens" -ge 150000 ] && ctx_color=$'\033[31m'   # red past 150k
 
 # --- Compose -------------------------------------------------------------
 out="${CYAN}${dir_disp}${RESET}"
@@ -89,7 +92,9 @@ out="${CYAN}${dir_disp}${RESET}"
 [ -n "$model" ] && out="${out} ${DIM}·${RESET} ${model}"
 out="${out} ${DIM}·${RESET} ${ctx_color}${ctx_fmt}/1m tokens (${ctx_pct}%)${RESET}"
 
-printf '%b' "$out"
+# Colors are already real ESC bytes (ANSI-C quoting above), so print verbatim
+# with '%s' — never '%b', which would interpret escapes in dynamic fields.
+printf '%s' "$out"
 ```
 
 ### 2. Make it executable
@@ -117,10 +122,12 @@ merge the key if it exists — don't clobber other settings):
 Render it with a fake payload and strip ANSI to confirm the format:
 
 ```bash
-echo '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Opus 4.8 (1M context)"},"transcript_path":"/tmp/sl-test.jsonl"}' > /tmp/sl-in.json
-printf '%s\n' '{"message":{"usage":{"input_tokens":18200}}}' > /tmp/sl-test.jsonl
-bash ~/.claude/statusline-command.sh < /tmp/sl-in.json | sed 's/\x1b\[[0-9;]*m//g'; echo
-rm -f /tmp/sl-in.json /tmp/sl-test.jsonl
+# Use mktemp for both temp files (no fixed /tmp names → no symlink/CWE-377 race).
+sl_in=$(mktemp); sl_tx=$(mktemp)
+printf '%s\n' '{"message":{"usage":{"input_tokens":18200}}}' > "$sl_tx"
+echo '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Opus 4.8 (1M context)"},"transcript_path":"'"$sl_tx"'"}' > "$sl_in"
+bash ~/.claude/statusline-command.sh < "$sl_in" | sed 's/\x1b\[[0-9;]*m//g'; echo
+rm -f "$sl_in" "$sl_tx"
 ```
 
 Expected: `<leaf> · ⎇ <branch> · Opus 4.8 (1M context) · 18.2k/1m tokens (2%)`
