@@ -5,6 +5,14 @@ const ROUTES = {
   mobile: "Mobile Support"
 };
 
+// Ticket text is untrusted user content; screen for prompt-injection markers.
+const INJECTION_MARKERS = [
+  "ignore previous instructions",
+  "system prompt",
+  "developer message",
+  "reveal secrets"
+];
+
 export function triageTicket(input) {
   if (!input || typeof input.message !== "string" || input.message.trim() === "") {
     throw new Error("message is required");
@@ -38,6 +46,11 @@ export function triageTicket(input) {
     priority = "high";
   }
 
+  const needsHumanReview = INJECTION_MARKERS.some((marker) => lower.includes(marker));
+  if (needsHumanReview) {
+    tags.push("security-review");
+  }
+
   const slaHours = priority === "urgent" ? 1 : priority === "high" ? 4 : 24;
 
   return {
@@ -45,7 +58,7 @@ export function triageTicket(input) {
     route,
     slaHours,
     tags,
-    needsHumanReview: false
+    needsHumanReview
   };
 }
 
