@@ -43,6 +43,15 @@ test("flags prompt injection attempts for human review", () => {
   assert.deepEqual(ticket.tags, ["security-review"]);
 });
 
+test("leaves benign messages without human review or security tag", () => {
+  const ticket = triageTicket({
+    message: "I have a question about my invoice and payment"
+  });
+
+  assert.equal(ticket.needsHumanReview, false);
+  assert.ok(!ticket.tags.includes("security-review"));
+});
+
 test("keeps VIP tag when classifying mobile tickets", () => {
   const ticket = triageTicket({
     message: "VIP customer has mobile roaming issue"

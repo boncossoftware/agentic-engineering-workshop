@@ -5,6 +5,15 @@ const ROUTES = {
   mobile: "Mobile Support"
 };
 
+// Ticket text is untrusted. Screen for common prompt-injection markers so a
+// human reviews anything that tries to hijack downstream LLM handling.
+const INJECTION_MARKERS = [
+  "ignore previous instructions",
+  "system prompt",
+  "developer message",
+  "reveal secrets"
+];
+
 export function triageTicket(input) {
   if (!input || typeof input.message !== "string" || input.message.trim() === "") {
     throw new Error("message is required");
@@ -40,12 +49,17 @@ export function triageTicket(input) {
 
   const slaHours = priority === "urgent" ? 1 : priority === "high" ? 4 : 24;
 
+  const needsHumanReview = INJECTION_MARKERS.some((m) => lower.includes(m));
+  if (needsHumanReview) {
+    tags.push("security-review");
+  }
+
   return {
     priority,
     route,
     slaHours,
     tags,
-    needsHumanReview: false
+    needsHumanReview
   };
 }
 
