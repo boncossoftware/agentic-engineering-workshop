@@ -78,10 +78,10 @@ ctx_fmt=$(awk -v t="$ctx_tokens" 'BEGIN{ if (t>=1000) printf "%.1fk", t/1000; el
 ctx_pct=$(awk -v t="$ctx_tokens" 'BEGIN{ printf "%.0f", (t/1000000)*100 }')
 
 # --- ANSI colors ---------------------------------------------------------
-DIM='\033[2m'; CYAN='\033[36m'; GREEN='\033[32m'; YELLOW='\033[33m'; RESET='\033[0m'
+DIM=$'\033[2m'; CYAN=$'\033[36m'; GREEN=$'\033[32m'; YELLOW=$'\033[33m'; RESET=$'\033[0m'
 ctx_color="$GREEN"
 [ "$ctx_tokens" -ge 120000 ] && ctx_color="$YELLOW"   # yellow past 120k
-[ "$ctx_tokens" -ge 150000 ] && ctx_color='\033[31m'  # red past 150k
+[ "$ctx_tokens" -ge 150000 ] && ctx_color=$'\033[31m'  # red past 150k
 
 # --- Compose -------------------------------------------------------------
 out="${CYAN}${dir_disp}${RESET}"
@@ -89,7 +89,9 @@ out="${CYAN}${dir_disp}${RESET}"
 [ -n "$model" ] && out="${out} ${DIM}·${RESET} ${model}"
 out="${out} ${DIM}·${RESET} ${ctx_color}${ctx_fmt}/1m tokens (${ctx_pct}%)${RESET}"
 
-printf '%b' "$out"
+# Print with %s (not %b): color codes are already real ESC bytes via $'...',
+# so nothing in the dynamic fields (e.g. a hostile dir name) is interpreted.
+printf '%s' "$out"
 ```
 
 ### 2. Make it executable
@@ -117,10 +119,12 @@ merge the key if it exists — don't clobber other settings):
 Render it with a fake payload and strip ANSI to confirm the format:
 
 ```bash
-echo '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Opus 4.8 (1M context)"},"transcript_path":"/tmp/sl-test.jsonl"}' > /tmp/sl-in.json
-printf '%s\n' '{"message":{"usage":{"input_tokens":18200}}}' > /tmp/sl-test.jsonl
-bash ~/.claude/statusline-command.sh < /tmp/sl-in.json | sed 's/\x1b\[[0-9;]*m//g'; echo
-rm -f /tmp/sl-in.json /tmp/sl-test.jsonl
+in_json=$(mktemp)
+transcript=$(mktemp)
+printf '%s\n' '{"message":{"usage":{"input_tokens":18200}}}' > "$transcript"
+echo '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Opus 4.8 (1M context)"},"transcript_path":"'"$transcript"'"}' > "$in_json"
+bash ~/.claude/statusline-command.sh < "$in_json" | sed 's/\x1b\[[0-9;]*m//g'; echo
+rm -f "$in_json" "$transcript"
 ```
 
 Expected: `<leaf> · ⎇ <branch> · Opus 4.8 (1M context) · 18.2k/1m tokens (2%)`
